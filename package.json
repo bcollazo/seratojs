@@ -1,0 +1,26 @@
+{
+  "name": "seratojs",
+  "version": "0.0.1",
+  "description": "Manage Serato Crates programatically via Javascript",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/bcollazo/seratojs.git"
+  },
+  "keywords": [
+    "serato",
+    "javascript",
+    "music",
+    "crates",
+    "dj"
+  ],
+  "author": "Bryan Collazo",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/bcollazo/seratojs/issues"
+  },
+  "homepage": "https://github.com/bcollazo/seratojs#readme"
+}
