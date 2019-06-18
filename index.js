@@ -1,4 +1,4 @@
-var fs = require("fs");
+const fs = require("fs");
 const os = require("os");
 const path = require("path");
 
@@ -14,8 +14,6 @@ const parse = function(contents) {
       indices.push(i);
     }
   }
-  console.log(contents);
-  console.log(indices);
 
   // Content in between these indices are the songs
   const songs = [];
@@ -26,9 +24,23 @@ const parse = function(contents) {
 
     let filepath = contents.slice(start, end);
     filepath = filepath.replace(/\0/g, ""); // remove null-termination bytes
-    songs.push(path.resolve(filepath));
+    songs.push(path.resolve("/", filepath));
   });
   return songs;
+};
+
+const toSeratoString = function(string) {
+  return "\0" + string.split("").join("\0");
+};
+
+const intToHexbin = function(number) {
+  const hex = number.toString(16).padStart(8, "0");
+  let ret = "";
+  for (let idx of [0, 2, 4, 6]) {
+    let bytestr = hex.slice(idx, idx + 2);
+    ret += String.fromCodePoint(parseInt(bytestr, 16));
+  }
+  return ret;
 };
 
 class Crate {
@@ -43,6 +55,36 @@ class Crate {
       this.songPaths = parse(fs.readFileSync(this.filepath, "ascii"));
     }
     return this.songPaths;
+  }
+  addSong(songPath) {
+    if (this.songPaths === null) {
+      this.songPaths = [];
+    }
+
+    const resolved = path.resolve(songPath);
+    if (!fs.existsSync(resolved)) {
+      throw new Error(`Song file ${resolved} doesn't exits`);
+    }
+
+    this.songPaths.push(resolved);
+  }
+  save() {
+    const header = "vrsn   8 1 . 0 / S e r a t o   S c r a t c h L i v e   C r a t e".replace(
+      / /g,
+      "\0"
+    );
+
+    let playlistSection = "";
+    this.songPaths.forEach(value => {
+      const data = toSeratoString(path.relative("/", value));
+      let ptrkSize = intToHexbin(data.length);
+      let otrkSize = intToHexbin(data.length + 8); // fixing the +8 (4 for 'ptrk', 4 for ptrkSize)
+      playlistSection += "otrk" + otrkSize + "ptrk" + ptrkSize + data;
+    });
+
+    const contents = header + playlistSection;
+    const buffer = Buffer.from(contents, "ascii");
+    fs.writeFileSync(this.filepath, buffer, { encoding: null });
   }
 }
 
