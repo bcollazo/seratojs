@@ -1,7 +1,7 @@
 {
   "name": "seratojs",
   "version": "0.1.0",
-  "description": "Manage Serato Crates programatically via Javascript",
+  "description": "Manage Serato Crates programatically via NodeJS.",
   "main": "index.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1"
