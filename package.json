@@ -1,6 +1,6 @@
 {
   "name": "seratojs",
-  "version": "0.1.0",
+  "version": "1.0.0",
   "description": "Manage Serato Crates programatically via NodeJS.",
   "main": "index.js",
   "scripts": {
