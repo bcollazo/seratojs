@@ -6,6 +6,14 @@ const path = require("path");
 const SERATO_FOLDER = path.join(os.homedir(), "Music", "_Serato_");
 const CRATES_FOLDER = path.join(SERATO_FOLDER, "SubCrates");
 
+function listCratesSync(subcratesFolder = CRATES_FOLDER) {
+  const crates = fs.readdirSync(subcratesFolder).map(x => {
+    const name = path.basename(x, ".crate");
+    return new Crate(name, subcratesFolder);
+  });
+  return crates;
+}
+
 const parse = function(contents) {
   // Find all 'ptrk' ocurrances
   const indices = [];
@@ -48,7 +56,7 @@ class Crate {
     // TODO: Make private
     this.filepath = path.join(subcratesFolder, name + ".crate");
     this.name = name;
-    this.songPaths = null;
+    this.songPaths = null; // singleton to be lazy-populated
   }
   getSongPaths() {
     if (this.songPaths === null) {
@@ -86,13 +94,7 @@ class Crate {
 
 const seratojs = {
   Crate: Crate,
-  listCratesSync: function(subcratesFolder = CRATES_FOLDER) {
-    const crates = fs.readdirSync(subcratesFolder).map(x => {
-      const name = path.basename(x, ".crate");
-      return new Crate(name);
-    });
-    return crates;
-  }
+  listCratesSync: listCratesSync
 };
 
 module.exports = seratojs;
