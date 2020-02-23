@@ -44,9 +44,9 @@ const intToHexbin = function(number) {
 };
 
 class Crate {
-  constructor(name) {
+  constructor(name, subcratesFolder = CRATES_FOLDER) {
     // TODO: Make private
-    this.filepath = path.join(CRATES_FOLDER, name + ".crate");
+    this.filepath = path.join(subcratesFolder, name + ".crate");
     this.name = name;
     this.songPaths = null;
   }
@@ -62,10 +62,6 @@ class Crate {
     }
 
     const resolved = path.resolve(songPath);
-    if (!fs.existsSync(resolved)) {
-      throw new Error(`Song file ${resolved} doesn't exits`);
-    }
-
     this.songPaths.push(resolved);
   }
   save() {
@@ -90,8 +86,8 @@ class Crate {
 
 const seratojs = {
   Crate: Crate,
-  listCratesSync: function() {
-    const crates = fs.readdirSync(CRATES_FOLDER).map(x => {
+  listCratesSync: function(subcratesFolder = CRATES_FOLDER) {
+    const crates = fs.readdirSync(subcratesFolder).map(x => {
       const name = path.basename(x, ".crate");
       return new Crate(name);
     });

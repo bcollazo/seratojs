@@ -4,7 +4,7 @@
   "description": "Manage Serato Crates programatically via NodeJS.",
   "main": "index.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "test": "jest"
   },
   "repository": {
     "type": "git",
@@ -22,5 +22,8 @@
   "bugs": {
     "url": "https://github.com/bcollazo/seratojs/issues"
   },
-  "homepage": "https://github.com/bcollazo/seratojs#readme"
+  "homepage": "https://github.com/bcollazo/seratojs#readme",
+  "devDependencies": {
+    "jest": "^25.1.0"
+  }
 }
