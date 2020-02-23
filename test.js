@@ -2,8 +2,25 @@ const path = require("path");
 const fs = require("fs");
 
 const seratojs = require("./index");
+const { sanitizeFilename } = require("./util");
 
 const TEST_SUBCRATES_FOLDER = path.join(".", "TestSubcrates");
+beforeEach(() => {
+  // Create TestSubcrateFolder
+  fs.mkdirSync(TEST_SUBCRATES_FOLDER);
+  fs.copyFileSync(
+    path.join(".", "Serato Demo Tracks.crate"),
+    path.join(TEST_SUBCRATES_FOLDER, "Serato Demo Tracks.crate")
+  );
+});
+
+afterEach(() => {
+  const files = fs.readdirSync(TEST_SUBCRATES_FOLDER);
+  for (let filename of files) {
+    fs.unlinkSync(path.join(TEST_SUBCRATES_FOLDER, filename));
+  }
+  fs.rmdirSync(TEST_SUBCRATES_FOLDER);
+});
 
 test("list crates in sync and read crate info", () => {
   const crates = seratojs.listCratesSync(TEST_SUBCRATES_FOLDER);
@@ -72,5 +89,32 @@ test("async create new crate and list", async () => {
   // Cleanup
   fs.unlinkSync(
     path.join(TEST_SUBCRATES_FOLDER, "ProgramaticallyCreatedCrate.crate")
+  );
+});
+
+test("weird names dont break crate creation", async () => {
+  const newCrate = new seratojs.Crate(
+    "2000-2010 HipHáp / Reggaeton!?",
+    TEST_SUBCRATES_FOLDER
+  );
+  await newCrate.save();
+});
+
+test("util filename sanitazion", () => {
+  expect(sanitizeFilename("hello/world")).toBe("hello-world");
+  expect(sanitizeFilename("hello/wo rl/d")).toBe("hello-wo rl-d");
+  expect(sanitizeFilename("hello-world")).toBe("hello-world");
+  expect(sanitizeFilename("foo bar baz")).toBe("foo bar baz");
+  expect(sanitizeFilename("Foo BAR bAz")).toBe("Foo BAR bAz");
+  expect(sanitizeFilename("Foo BAR.bAz")).toBe("Foo BAR-bAz");
+  expect(sanitizeFilename("Foo_BAR.bAz")).toBe("Foo_BAR-bAz");
+  expect(sanitizeFilename("Foo_BAR.bAz!")).toBe("Foo_BAR-bAz-");
+  expect(sanitizeFilename("!Viva Latino!")).toBe("-Viva Latino-");
+  expect(sanitizeFilename("2000-2010 HipHop / Reggae")).toBe(
+    "2000-2010 HipHop - Reggae"
+  );
+  expect(sanitizeFilename("Activáera!?")).toBe("Activ-era--");
+  expect(sanitizeFilename("2000-2010 HipHáp / Reggaeton!?")).toBe(
+    "2000-2010 HipH-p - Reggaeton--"
   );
 });
