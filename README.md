@@ -19,19 +19,35 @@ console.log(crates);
 
 // List all song filepaths in a given crate.
 const crate = crates[0];
-const songs = crate.getSongPaths();
+const songs = crate.getSongPathsSync();
 console.log(songs);
 
 // Create a crate
 const newCrate = new seratojs.Crate("ProgramaticallyCreatedCrate");
 newCrate.addSong("Users/bcollazo/Music/song.mp3");
 newCrate.addSong("C:\\Users\\bcollazo\\Music\\second_song.mp3");
-newCrate.save();
+newCrate.saveSync();
+```
+
+Asynchronous (await-async / promise-based) API:
+
+```javascript
+const seratojs = require("seratojs");
+
+(async function() {
+  const crates = await seratojs.listCrates();
+  const songs = await crates[0].getSongPaths();
+  const newCrate = new seratojs.Crate("ProgramaticallyCreatedCrate");
+  newCrate.addSong("Users/bcollazo/Music/song.mp3");
+  await newCrate.save();
+})();
 ```
 
 ## Notes
 
-This package is still under development. Has only been tested in Windows. Still TODO:
+This package has only been tested in Windows.
 
-- Async version of all methods.
-- Tests without modifying user's environment.
+### Migrating from 1.x to 2.x
+
+- Change `crate.getSongPaths()` to `crate.getSongPathsSync()` or `await crate.getSongPaths()`.
+- Change `newCrate.save()` to `newCrate.saveSync()` or `await newCrate.save()`.

@@ -1,4 +1,5 @@
 const fs = require("fs");
+const util = require("util");
 const os = require("os");
 const path = require("path");
 
@@ -8,6 +9,15 @@ const CRATES_FOLDER = path.join(SERATO_FOLDER, "SubCrates");
 
 function listCratesSync(subcratesFolder = CRATES_FOLDER) {
   const crates = fs.readdirSync(subcratesFolder).map(x => {
+    const name = path.basename(x, ".crate");
+    return new Crate(name, subcratesFolder);
+  });
+  return crates;
+}
+
+async function listCrates(subcratesFolder) {
+  const files = await util.promisify(fs.readdir)(subcratesFolder);
+  const crates = files.map(x => {
     const name = path.basename(x, ".crate");
     return new Crate(name, subcratesFolder);
   });
@@ -58,7 +68,17 @@ class Crate {
     this.name = name;
     this.songPaths = null; // singleton to be lazy-populated
   }
-  getSongPaths() {
+  async getSongPaths() {
+    if (this.songPaths === null) {
+      const contents = await util.promisify(fs.readFile)(
+        this.filepath,
+        "ascii"
+      );
+      this.songPaths = parse(contents);
+    }
+    return Promise.resolve(this.songPaths);
+  }
+  getSongPathsSync() {
     if (this.songPaths === null) {
       this.songPaths = parse(fs.readFileSync(this.filepath, "ascii"));
     }
@@ -72,7 +92,7 @@ class Crate {
     const resolved = path.resolve(songPath);
     this.songPaths.push(resolved);
   }
-  save() {
+  _buildSaveBuffer() {
     const header = "vrsn   8 1 . 0 / S e r a t o   S c r a t c h L i v e   C r a t e".replace(
       / /g,
       "\0"
@@ -87,14 +107,24 @@ class Crate {
     });
 
     const contents = header + playlistSection;
-    const buffer = Buffer.from(contents, "ascii");
+    return Buffer.from(contents, "ascii");
+  }
+  async save() {
+    const buffer = this._buildSaveBuffer();
+    return util.promisify(fs.writeFile)(this.filepath, buffer, {
+      encoding: null
+    });
+  }
+  saveSync() {
+    const buffer = this._buildSaveBuffer();
     fs.writeFileSync(this.filepath, buffer, { encoding: null });
   }
 }
 
 const seratojs = {
   Crate: Crate,
-  listCratesSync: listCratesSync
+  listCratesSync: listCratesSync,
+  listCrates: listCrates
 };
 
 module.exports = seratojs;
