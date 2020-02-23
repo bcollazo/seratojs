@@ -45,7 +45,7 @@ const seratojs = require("seratojs");
 
 ## Notes
 
-This package has only been tested in Windows.
+SeratoJS tries to sanitize crate name before creation. This is to allow crates named 'Some / Name' to be created without giving trouble. It will be created as 'Some - Name' instead.
 
 ### Migrating from 1.x to 2.x
 
