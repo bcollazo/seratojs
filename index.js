@@ -134,8 +134,13 @@ class Crate {
 
     let playlistSection = "";
     if (this.songPaths) {
-      this.songPaths.forEach((value) => {
-        const data = toSeratoString(path.relative("/", value));
+      this.songPaths.forEach((songPath) => {
+        const absoluteSongPath = path.resolve(songPath);
+        const songPathWithoutDrive =
+          process.platform === "win32"
+            ? absoluteSongPath.substring(3) // remove the C:\ or D:\ or ...
+            : absoluteSongPath;
+        const data = toSeratoString(songPathWithoutDrive);
         let ptrkSize = intToHexbin(data.length);
         let otrkSize = intToHexbin(data.length + 8); // fixing the +8 (4 for 'ptrk', 4 for ptrkSize)
         playlistSection += "otrk" + otrkSize + "ptrk" + ptrkSize + data;
