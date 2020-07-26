@@ -43,9 +43,36 @@ const sanitizeFilename = function (filename) {
   return filename.replace(INVALID_CHARACTERS_REGEX, "-");
 };
 
+const isWindows = function () {
+  return process.platform === "win32";
+};
+
+/**
+ * Retrieves the drive-root part of a path
+ * e.g.
+ *    D:\\MyFolder\\song.mp3 => D:\\
+ *    /Volumes/MYUSB/song.mp3 => /Volumes/MYUSB
+ *    /Users/bcollazo/Music/song.mp3 => /
+ * @param {*} songPath, assumed to be absolute path
+ */
+const extractMountpoint = function (songPath) {
+  if (isWindows()) {
+    return path.parse(songPath).root;
+  } else {
+    if (songPath.startsWith("/Volumes")) {
+      const volumePath = songPath.split("/").slice(0, 3).join("/");
+      return volumePath;
+    } else {
+      return "/";
+    }
+  }
+};
+
 module.exports = {
   parse,
   toSeratoString,
   intToHexbin,
   sanitizeFilename,
+  isWindows,
+  extractMountpoint,
 };

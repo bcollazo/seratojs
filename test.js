@@ -2,7 +2,7 @@ const path = require("path");
 const fs = require("fs");
 
 const seratojs = require("./index");
-const { sanitizeFilename } = require("./util");
+const { sanitizeFilename, isWindows, extractMountpoint } = require("./util");
 
 /**
  * These tests create a folder in the repo root called "_TestSerato_"
@@ -28,132 +28,34 @@ afterEach(() => {
   fs.rmdirSync(TEST_SERATO_FOLDER);
 });
 
-// ===== List crates
-test("list crates in sync", () => {
-  const crates = seratojs.listCratesSync([TEST_SERATO_FOLDER]);
-  expect(crates.length).toBe(1);
+function external(...paths) {
+  const prefix = isWindows() ? "D:\\" : "/Volumes/EECS MIT/";
+  return path.resolve(path.join(prefix, ...paths));
+}
+
+function local(...paths) {
+  return path.resolve(path.join("/", ...paths));
+}
+
+// ===== Helper functions
+test("testing helper functions", () => {
+  const path1 = external("TestFolder", "song1.mp3");
+  const path2 = local("TestFolder", "song1.mp3");
+  if (isWindows()) {
+    expect(path1).toBe("D:\\TestFolder\\song1.mp3");
+    expect(path2).toBe("C:\\TestFolder\\song1.mp3");
+  } else {
+    expect(path1).toBe("/Volumes/EECS MIT/TestFolder/song1.mp3");
+    expect(path2).toBe("/TestFolder/song1.mp3");
+  }
 });
 
-test("async list files", async () => {
-  const crates = await seratojs.listCrates([TEST_SERATO_FOLDER]);
-  expect(crates.length).toBe(1);
-});
-
-// ===== Save locations
-test("adding songs from a drive, saves it in drive", () => {
-  const crate = new seratojs.Crate("TestDriveCrate");
-  crate.addSong("D:\\TestFolder\\song1.mp3");
-  crate.addSong("D:\\song2.mp3");
-
-  const locations = crate.getSaveLocations();
-  expect(locations.length).toBe(1);
-  expect(locations[0]).toBe("D:\\_Serato_");
-});
-
-test("adding songs from a drive and local disk, saves it in both", () => {
-  const crate = new seratojs.Crate("TestDriveCrate");
-  crate.addSong("D:\\TestFolder\\song1.mp3");
-  crate.addSong("C:\\Users\\bcollazo\\Music\\song2.mp3");
-
-  const locations = crate.getSaveLocations();
-  expect(locations.length).toBe(2);
-  expect(locations.includes("D:\\_Serato_")).toBe(true);
-  expect(locations.includes("C:\\Users\\bcollazo\\Music\\_Serato_")).toBe(true);
-});
-
-test("adding songs from local disk only, saves it Music folder _Serato_", () => {
-  const crate = new seratojs.Crate("TestDriveCrate");
-  crate.addSong("C:\\Users\\bcollazo\\Music\\folder\\song1.mp3");
-  crate.addSong("C:\\Users\\bcollazo\\Music\\song2.mp3");
-
-  const locations = crate.getSaveLocations();
-  expect(locations.length).toBe(1);
-  expect(locations.includes("C:\\Users\\bcollazo\\Music\\_Serato_")).toBe(true);
-});
-
-test("new empty crate saves it Music folder _Serato_", () => {
-  const crate = new seratojs.Crate("TestDriveCrate");
-
-  const locations = crate.getSaveLocations();
-  expect(locations.length).toBe(1);
-  expect(locations.includes("C:\\Users\\bcollazo\\Music\\_Serato_")).toBe(true);
-});
-
-test("if specify serato folder at creation, saving will use that one. no matter contents", () => {
-  const crate = new seratojs.Crate("TestDriveCrate", TEST_SERATO_FOLDER);
-  crate.addSong("D:\\TestFolder\\song1.mp3");
-  crate.addSong("C:\\Users\\bcollazo\\Music\\song2.mp3");
-
-  const locations = crate.getSaveLocations();
-  expect(locations.length).toBe(1);
-  expect(locations.includes(TEST_SERATO_FOLDER)).toBe(true);
-});
-
-// ===== Save songs. Can mock and listing crates matches.
-test("IntegrationTest: create new crate, add songs, list crates, list songs", () => {
-  const crate = new seratojs.Crate(
-    "ProgramaticallyCreatedCrate",
-    TEST_SERATO_FOLDER
+// ===== Util module
+test("extractMountpoint", () => {
+  expect(extractMountpoint(external("TestFolder", "song1.mp3"))).toBe(
+    external()
   );
-  crate.addSong("C:\\Users\\bcollazo\\Music\\second_song.mp3");
-  crate.saveSync(); // saves to C:\\
-
-  const crates = seratojs.listCratesSync([TEST_SERATO_FOLDER]);
-  expect(crates.length).toBe(2);
-  const songPaths = crate.getSongPathsSync();
-  expect(songPaths.length).toBe(1);
-});
-
-test("IntegrationTest: async mac create new crate, add songs, list crates, list songs", async () => {
-  const crate = new seratojs.Crate(
-    "ProgramaticallyCreatedCrate",
-    TEST_SERATO_FOLDER
-  );
-  crate.addSong("Users/bcollazo/Music/song.mp3");
-  crate.addSong("/Users/bcollazo/Music/second_song.mp3");
-  await crate.save();
-
-  const crates = await seratojs.listCrates([TEST_SERATO_FOLDER]);
-  expect(crates.length).toBe(2);
-  const songPaths = await crate.getSongPaths();
-  expect(songPaths.length).toBe(2);
-});
-
-// ===== Read song lists
-test("read crate info", () => {
-  const crate = seratojs.listCratesSync([TEST_SERATO_FOLDER])[0];
-  const songs = crate.getSongPathsSync();
-  expect(crate.name).toBe("Serato Demo Tracks");
-  expect(songs).toEqual([
-    "C:\\Users\\bcollazo\\Music\\_Serato_\\Imported\\Serato Demo Tracks\\01 - House Track Serato House Starter Pack.mp3",
-    "C:\\Users\\bcollazo\\Music\\_Serato_\\Imported\\Serato Demo Tracks\\02 - House Track Serato House Starter Pack.mp3",
-    "C:\\Users\\bcollazo\\Music\\_Serato_\\Imported\\Serato Demo Tracks\\03 - House Track Serato House Starter Pack.mp3",
-    "C:\\Users\\bcollazo\\Music\\_Serato_\\Imported\\Serato Demo Tracks\\04 - Hip Hop Track Serato Hip Hop Starter Pack.mp3",
-    "C:\\Users\\bcollazo\\Music\\_Serato_\\Imported\\Serato Demo Tracks\\05 - Hip Hop Track Serato Hip Hop Starter Pack.mp3",
-    "C:\\Users\\bcollazo\\Music\\_Serato_\\Imported\\Serato Demo Tracks\\06 - Hip Hop Track Serato Hip Hop Starter Pack.mp3",
-  ]);
-});
-
-test("async read song paths", async () => {
-  const crate = (await seratojs.listCrates([TEST_SERATO_FOLDER]))[0];
-  const songs = await crate.getSongPaths();
-  expect(crate.name).toBe("Serato Demo Tracks");
-  expect(songs).toEqual([
-    "C:\\Users\\bcollazo\\Music\\_Serato_\\Imported\\Serato Demo Tracks\\01 - House Track Serato House Starter Pack.mp3",
-    "C:\\Users\\bcollazo\\Music\\_Serato_\\Imported\\Serato Demo Tracks\\02 - House Track Serato House Starter Pack.mp3",
-    "C:\\Users\\bcollazo\\Music\\_Serato_\\Imported\\Serato Demo Tracks\\03 - House Track Serato House Starter Pack.mp3",
-    "C:\\Users\\bcollazo\\Music\\_Serato_\\Imported\\Serato Demo Tracks\\04 - Hip Hop Track Serato Hip Hop Starter Pack.mp3",
-    "C:\\Users\\bcollazo\\Music\\_Serato_\\Imported\\Serato Demo Tracks\\05 - Hip Hop Track Serato Hip Hop Starter Pack.mp3",
-    "C:\\Users\\bcollazo\\Music\\_Serato_\\Imported\\Serato Demo Tracks\\06 - Hip Hop Track Serato Hip Hop Starter Pack.mp3",
-  ]);
-});
-
-test("weird names dont break crate creation", async () => {
-  const newCrate = new seratojs.Crate(
-    "2000-2010 HipHáp / Reggaeton!?",
-    TEST_SERATO_FOLDER
-  );
-  await newCrate.save();
+  expect(extractMountpoint(local("TestFolder", "song1.mp3"))).toBe(local());
 });
 
 test("util filename sanitazion", () => {
@@ -173,4 +75,176 @@ test("util filename sanitazion", () => {
   expect(sanitizeFilename("2000-2010 HipHáp / Reggaeton!?")).toBe(
     "2000-2010 HipH-p - Reggaeton--"
   );
+});
+
+// ===== List crates
+test("list crates in specific serato folder", async () => {
+  const crates = await seratojs.listCrates([TEST_SERATO_FOLDER]);
+  expect(crates.length).toBe(1);
+});
+
+// ===== Save locations
+test("adding songs from a drive, saves it in drive", async () => {
+  const crate = new seratojs.Crate("TestDriveCrate");
+  crate.addSong(external("TestFolder", "song1.mp3"));
+  crate.addSong(external("song2.mp3"));
+
+  const subcrates = crate.getSubCrates();
+  expect(subcrates.length).toBe(1);
+  expect(subcrates[0].filepath).toBe(
+    external("_Serato_", "SubCrates", "TestDriveCrate.crate")
+  );
+});
+
+test("adding songs from a drive and local disk, saves it in both", () => {
+  const crate = new seratojs.Crate("TestDriveCrate");
+  crate.addSong(external("TestFolder", "song1.mp3"));
+  crate.addSong(local("Users", "bcollazo", "Music", "song2.mp3"));
+
+  const subcrates = crate.getSubCrates();
+  expect(subcrates.length).toBe(2);
+  expect(
+    subcrates.some(
+      (s) =>
+        s.filepath === external("_Serato_", "SubCrates", "TestDriveCrate.crate")
+    )
+  ).toBe(true);
+  expect(
+    subcrates.some(
+      (s) =>
+        s.filepath ===
+        local(
+          "Users",
+          "bcollazo",
+          "Music",
+          "_Serato_",
+          "SubCrates",
+          "TestDriveCrate.crate"
+        )
+    )
+  ).toBe(true);
+});
+
+test("adding songs from local disk only, saves it Music folder _Serato_", () => {
+  const crate = new seratojs.Crate("TestDriveCrate");
+  crate.addSong(local("Users", "bcollazo", "Music", "folder", "song1.mp3"));
+  crate.addSong(local("Users", "bcollazo", "Music", "song2.mp3"));
+
+  const subcrates = crate.getSubCrates();
+  expect(subcrates.length).toBe(1);
+  expect(subcrates[0].seratoFolder).toBe(
+    local("Users", "bcollazo", "Music", "_Serato_")
+  );
+});
+
+test("adding external song, only add relative path", () => {
+  const subcrate = new seratojs.SubCrate(
+    "CreatedSplit",
+    extractMountpoint("/Volumes/EECS MIT/_Serato_"),
+    "/Volumes/EECS MIT/_Serato_"
+  );
+  subcrate.addSong("/Volumes/EECS MIT/Folder/song.mp3");
+  expect(subcrate._songPaths).toEqual(["Folder/song.mp3"]);
+});
+
+// ===== Subcrates
+test("SubCrate: create, add songs, list crates, list songs", async () => {
+  const subcrate = new seratojs.SubCrate(
+    "ProgramaticallyCreatedSubCrate",
+    extractMountpoint(TEST_SERATO_FOLDER),
+    TEST_SERATO_FOLDER
+  );
+  subcrate.addSong("~/Music/song.mp3");
+  subcrate.addSong("/Users/bcollazo/Music/second_song.mp3");
+  await subcrate.save();
+
+  const crates = await seratojs.listCrates([TEST_SERATO_FOLDER]);
+  expect(crates.length).toBe(2);
+  const songPaths = await subcrate.getSongPaths();
+  expect(songPaths.length).toBe(2);
+});
+
+// ===== Read song lists
+// test("read crate info", () => {
+//   const crate = seratojs.listCratesSync([TEST_SERATO_FOLDER])[0];
+//   const songs = crate.getSongPathsSync();
+//   expect(crate.name).toBe("Serato Demo Tracks");
+//   expect(songs).toEqual([
+//     "C:\\Users\\bcollazo\\Music\\_Serato_\\Imported\\Serato Demo Tracks\\01 - House Track Serato House Starter Pack.mp3",
+//     "C:\\Users\\bcollazo\\Music\\_Serato_\\Imported\\Serato Demo Tracks\\02 - House Track Serato House Starter Pack.mp3",
+//     "C:\\Users\\bcollazo\\Music\\_Serato_\\Imported\\Serato Demo Tracks\\03 - House Track Serato House Starter Pack.mp3",
+//     "C:\\Users\\bcollazo\\Music\\_Serato_\\Imported\\Serato Demo Tracks\\04 - Hip Hop Track Serato Hip Hop Starter Pack.mp3",
+//     "C:\\Users\\bcollazo\\Music\\_Serato_\\Imported\\Serato Demo Tracks\\05 - Hip Hop Track Serato Hip Hop Starter Pack.mp3",
+//     "C:\\Users\\bcollazo\\Music\\_Serato_\\Imported\\Serato Demo Tracks\\06 - Hip Hop Track Serato Hip Hop Starter Pack.mp3",
+//   ]);
+// });
+
+// test("async read song paths", async () => {
+//   const crate = (await seratojs.listCrates([TEST_SERATO_FOLDER]))[0];
+//   const songs = await crate.getSongPaths();
+//   expect(crate.name).toBe("Serato Demo Tracks");
+//   expect(songs).toEqual([
+//     local(
+//       "Users",
+//       "bcollazo",
+//       "Music",
+//       "_Serato_",
+//       "Imported",
+//       "Serato Demo Tracks",
+//       "01 - House Track Serato House Starter Pack.mp3"
+//     ),
+//     local(
+//       "Users",
+//       "bcollazo",
+//       "Music",
+//       "_Serato_",
+//       "Imported",
+//       "Serato Demo Tracks",
+//       "02 - House Track Serato House Starter Pack.mp3"
+//     ),
+//     local(
+//       "Users",
+//       "bcollazo",
+//       "Music",
+//       "_Serato_",
+//       "Imported",
+//       "Serato Demo Tracks",
+//       "03 - House Track Serato House Starter Pack.mp3"
+//     ),
+//     local(
+//       "Users",
+//       "bcollazo",
+//       "Music",
+//       "_Serato_",
+//       "Imported",
+//       "Serato Demo Tracks",
+//       "04 - Hip Hop Track Serato Hip Hop Starter Pack.mp3"
+//     ),
+//     local(
+//       "Users",
+//       "bcollazo",
+//       "Music",
+//       "_Serato_",
+//       "Imported",
+//       "Serato Demo Tracks",
+//       "05 - Hip Hop Track Serato Hip Hop Starter Pack.mp3"
+//     ),
+//     local(
+//       "Users",
+//       "bcollazo",
+//       "Music",
+//       "_Serato_",
+//       "Imported",
+//       "Serato Demo Tracks",
+//       "06 - Hip Hop Track Serato Hip Hop Starter Pack.mp3"
+//     ),
+//   ]);
+// });
+
+test("weird names dont break crate creation", async () => {
+  const newCrate = new seratojs.Crate(
+    "2000-2010 HipHáp / Reggaeton!?",
+    TEST_SERATO_FOLDER
+  );
+  await newCrate.save();
 });

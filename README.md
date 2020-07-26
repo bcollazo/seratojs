@@ -13,32 +13,19 @@ npm install seratojs
 ```javascript
 const seratojs = require("seratojs");
 
-// List all crates defined by user.
-const crates = seratojs.listCratesSync();
-console.log(crates);
-
-// List all song filepaths in a given crate.
-const crate = crates[0];
-const songs = crate.getSongPathsSync();
-console.log(songs);
-
-// Create a crate
-const newCrate = new seratojs.Crate("ProgramaticallyCreatedCrate");
-newCrate.addSong("Users/bcollazo/Music/song.mp3");
-newCrate.addSong("C:\\Users\\bcollazo\\Music\\second_song.mp3");
-newCrate.saveSync();
-```
-
-Asynchronous (await-async / promise-based) API:
-
-```javascript
-const seratojs = require("seratojs");
-
 (async function () {
+  // List all crates visible in Serato
   const crates = await seratojs.listCrates();
-  const songs = await crates[0].getSongPaths();
+  console.log(crates);
+
+  // List all song filepaths in a given crate.
+  const crate = crates[0];
+  const songs = await crate.getSongPaths();
+  console.log(songs);
+
+  // Create a crate
   const newCrate = new seratojs.Crate("ProgramaticallyCreatedCrate");
-  newCrate.addSong("Users/bcollazo/Music/song.mp3");
+  await newCrate.addSong("/Users/bcollazo/Music/song.mp3");
   await newCrate.save();
 })();
 ```
