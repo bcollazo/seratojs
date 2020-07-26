@@ -2,7 +2,7 @@ const path = require("path");
 
 const INVALID_CHARACTERS_REGEX = /[^A-Za-z0-9_ ]/gi;
 
-const parse = function(contents) {
+const parse = function (contents) {
   // Find all 'ptrk' ocurrances
   const indices = [];
   for (let i = 0; i < contents.length; i++) {
@@ -25,11 +25,11 @@ const parse = function(contents) {
   return songs;
 };
 
-const toSeratoString = function(string) {
+const toSeratoString = function (string) {
   return "\0" + string.split("").join("\0");
 };
 
-const intToHexbin = function(number) {
+const intToHexbin = function (number) {
   const hex = number.toString(16).padStart(8, "0");
   let ret = "";
   for (let idx of [0, 2, 4, 6]) {
@@ -39,7 +39,7 @@ const intToHexbin = function(number) {
   return ret;
 };
 
-const sanitizeFilename = function(filename) {
+const sanitizeFilename = function (filename) {
   return filename.replace(INVALID_CHARACTERS_REGEX, "-");
 };
 
@@ -47,5 +47,5 @@ module.exports = {
   parse,
   toSeratoString,
   intToHexbin,
-  sanitizeFilename
+  sanitizeFilename,
 };
