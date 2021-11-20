@@ -11,7 +11,11 @@ const {
 } = require("./util");
 
 // Singleton for Serato Folder Path (I doubt it'll change during runtime)
-const DEFAULT_SERATO_FOLDER = path.join(os.homedir(), "Music", "_Serato_");
+const PLATFORM_DEFAULT_SERATO_FOLDER = path.join(
+  os.homedir(),
+  "Music",
+  "_Serato_"
+);
 
 function getSubcratesFolder(seratoFolder) {
   return path.join(seratoFolder, "SubCrates");
@@ -21,7 +25,7 @@ function getSubcratesFolder(seratoFolder) {
  * For each Serato Folder location, collect crates and returns a list
  * of all of these.
  */
-function listCratesSync(seratoFolders = [DEFAULT_SERATO_FOLDER]) {
+function listCratesSync(seratoFolders = [PLATFORM_DEFAULT_SERATO_FOLDER]) {
   const allCrates = [];
   seratoFolders.forEach((seratoFolder) => {
     const subcratesFolder = getSubcratesFolder(seratoFolder);
@@ -34,7 +38,7 @@ function listCratesSync(seratoFolders = [DEFAULT_SERATO_FOLDER]) {
   return allCrates;
 }
 
-async function listCrates(seratoFolders = [DEFAULT_SERATO_FOLDER]) {
+async function listCrates(seratoFolders = [PLATFORM_DEFAULT_SERATO_FOLDER]) {
   const allCrates = [];
   for (const seratoFolder of seratoFolders) {
     const subcratesFolder = getSubcratesFolder(seratoFolder);
@@ -66,9 +70,7 @@ class Crate {
     this.filename = this.name + ".crate";
     this.songPaths = [];
 
-    this.seratoFolder = seratoFolder;
-    // At creation? At saving? At reading?
-    // this.filepath = path.join(subcratesFolder, this.name + ".crate");
+    this.seratoFolder = seratoFolder; // To override for testing...
   }
 
   /**
@@ -80,33 +82,46 @@ class Crate {
     }
 
     if (this.songPaths.length === 0) {
-      return [DEFAULT_SERATO_FOLDER];
+      return [PLATFORM_DEFAULT_SERATO_FOLDER];
     }
 
     const roots = new Set();
-    for (const songPath of this.songPaths) {
-      roots.add(path.parse(songPath).root);
-    }
-    return Array.from(roots).map((root) => {
-      if (root === "C:\\") {
-        return DEFAULT_SERATO_FOLDER;
+    this.songPaths.forEach((songPath) => {
+      const root = path.parse(songPath).root;
+      const isFromExternalDrive =
+        root === "C:\\" ||
+        (process.platform === "darwin" && songPath.startsWith("/Volumes"));
+
+      if (isFromExternalDrive) {
+        if (process.platform === "win32") {
+          roots.add(path.join(root, "_Serato_"));
+        } else if (process.platform === "darwin") {
+          const externalRoot = songPath
+            .split(path.sep)
+            .slice(0, 3)
+            .join(path.sep);
+          roots.add(path.join(externalRoot, "_Serato_"));
+        } else {
+          throw new Error("Platform not supported");
+        }
       } else {
-        return path.join(root, "_Serato_");
+        roots.add(PLATFORM_DEFAULT_SERATO_FOLDER);
       }
     });
+    return Array.from(roots);
   }
 
+  // TODO: When reading, where should it read from?
   async getSongPaths() {
     const filepath = this._buildCrateFilepath(
-      this.seratoFolder || DEFAULT_SERATO_FOLDER
+      this.seratoFolder || PLATFORM_DEFAULT_SERATO_FOLDER
     );
     const contents = await util.promisify(fs.readFile)(filepath, "ascii");
     return parse(contents);
   }
-
   getSongPathsSync() {
     const filepath = this._buildCrateFilepath(
-      this.seratoFolder || DEFAULT_SERATO_FOLDER
+      this.seratoFolder || PLATFORM_DEFAULT_SERATO_FOLDER
     );
     const contents = fs.readFileSync(filepath, "ascii");
     return parse(contents);
