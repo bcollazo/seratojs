@@ -5,6 +5,16 @@ const seratojs = require("./index");
 const { sanitizeFilename } = require("./util");
 
 const TEST_SUBCRATES_FOLDER = path.join(".", "TestSubcrates");
+const NON_EXISTENT_SUBCRATES_FOLDER = path.join(".", "NonExistentTestFolder");
+
+function safelyDeleteFolder(folder) {
+  const files = fs.readdirSync(folder);
+  for (let filename of files) {
+    fs.unlinkSync(path.join(folder, filename));
+  }
+  fs.rmdirSync(folder);
+}
+
 beforeEach(() => {
   // Create TestSubcrateFolder
   fs.mkdirSync(TEST_SUBCRATES_FOLDER);
@@ -15,11 +25,7 @@ beforeEach(() => {
 });
 
 afterEach(() => {
-  const files = fs.readdirSync(TEST_SUBCRATES_FOLDER);
-  for (let filename of files) {
-    fs.unlinkSync(path.join(TEST_SUBCRATES_FOLDER, filename));
-  }
-  fs.rmdirSync(TEST_SUBCRATES_FOLDER);
+  safelyDeleteFolder(TEST_SUBCRATES_FOLDER);
 });
 
 test("list crates in sync and read crate info", () => {
@@ -35,7 +41,7 @@ test("list crates in sync and read crate info", () => {
     "C:\\Users\\bcollazo\\Music\\_Serato_\\Imported\\Serato Demo Tracks\\03 - House Track Serato House Starter Pack.mp3",
     "C:\\Users\\bcollazo\\Music\\_Serato_\\Imported\\Serato Demo Tracks\\04 - Hip Hop Track Serato Hip Hop Starter Pack.mp3",
     "C:\\Users\\bcollazo\\Music\\_Serato_\\Imported\\Serato Demo Tracks\\05 - Hip Hop Track Serato Hip Hop Starter Pack.mp3",
-    "C:\\Users\\bcollazo\\Music\\_Serato_\\Imported\\Serato Demo Tracks\\06 - Hip Hop Track Serato Hip Hop Starter Pack.mp3"
+    "C:\\Users\\bcollazo\\Music\\_Serato_\\Imported\\Serato Demo Tracks\\06 - Hip Hop Track Serato Hip Hop Starter Pack.mp3",
   ]);
 });
 
@@ -70,7 +76,7 @@ test("async list files", async () => {
     "C:\\Users\\bcollazo\\Music\\_Serato_\\Imported\\Serato Demo Tracks\\03 - House Track Serato House Starter Pack.mp3",
     "C:\\Users\\bcollazo\\Music\\_Serato_\\Imported\\Serato Demo Tracks\\04 - Hip Hop Track Serato Hip Hop Starter Pack.mp3",
     "C:\\Users\\bcollazo\\Music\\_Serato_\\Imported\\Serato Demo Tracks\\05 - Hip Hop Track Serato Hip Hop Starter Pack.mp3",
-    "C:\\Users\\bcollazo\\Music\\_Serato_\\Imported\\Serato Demo Tracks\\06 - Hip Hop Track Serato Hip Hop Starter Pack.mp3"
+    "C:\\Users\\bcollazo\\Music\\_Serato_\\Imported\\Serato Demo Tracks\\06 - Hip Hop Track Serato Hip Hop Starter Pack.mp3",
   ]);
 });
 
@@ -98,6 +104,24 @@ test("weird names dont break crate creation", async () => {
     TEST_SUBCRATES_FOLDER
   );
   await newCrate.save();
+});
+
+test("async create when Serato folder doesnt exist", async () => {
+  const newCrate = new seratojs.Crate(
+    "TestCrateSeratoFolderNonExistent",
+    NON_EXISTENT_SUBCRATES_FOLDER
+  );
+  await newCrate.save();
+  safelyDeleteFolder(NON_EXISTENT_SUBCRATES_FOLDER);
+});
+
+test("create when Serato folder doesnt exist", async () => {
+  const newCrate = new seratojs.Crate(
+    "TestCrateSeratoFolderNonExistent",
+    NON_EXISTENT_SUBCRATES_FOLDER
+  );
+  newCrate.saveSync();
+  safelyDeleteFolder(NON_EXISTENT_SUBCRATES_FOLDER);
 });
 
 test("util filename sanitazion", () => {

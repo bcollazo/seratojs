@@ -7,7 +7,7 @@ const {
   parse,
   toSeratoString,
   intToHexbin,
-  sanitizeFilename
+  sanitizeFilename,
 } = require("./util");
 
 // Singleton for Serato Folder Path (I doubt it'll change during runtime)
@@ -15,7 +15,7 @@ const SERATO_FOLDER = path.join(os.homedir(), "Music", "_Serato_");
 const CRATES_FOLDER = path.join(SERATO_FOLDER, "SubCrates");
 
 function listCratesSync(subcratesFolder = CRATES_FOLDER) {
-  const crates = fs.readdirSync(subcratesFolder).map(x => {
+  const crates = fs.readdirSync(subcratesFolder).map((x) => {
     const name = path.basename(x, ".crate");
     return new Crate(name, subcratesFolder);
   });
@@ -24,7 +24,7 @@ function listCratesSync(subcratesFolder = CRATES_FOLDER) {
 
 async function listCrates(subcratesFolder) {
   const files = await util.promisify(fs.readdir)(subcratesFolder);
-  const crates = files.map(x => {
+  const crates = files.map((x) => {
     const name = path.basename(x, ".crate");
     return new Crate(name, subcratesFolder);
   });
@@ -63,14 +63,15 @@ class Crate {
     this.songPaths.push(resolved);
   }
   _buildSaveBuffer() {
-    const header = "vrsn   8 1 . 0 / S e r a t o   S c r a t c h L i v e   C r a t e".replace(
-      / /g,
-      "\0"
-    );
+    const header =
+      "vrsn   8 1 . 0 / S e r a t o   S c r a t c h L i v e   C r a t e".replace(
+        / /g,
+        "\0"
+      );
 
     let playlistSection = "";
     if (this.songPaths) {
-      this.songPaths.forEach(value => {
+      this.songPaths.forEach((value) => {
         const data = toSeratoString(path.relative("/", value));
         let ptrkSize = intToHexbin(data.length);
         let otrkSize = intToHexbin(data.length + 8); // fixing the +8 (4 for 'ptrk', 4 for ptrkSize)
@@ -82,12 +83,18 @@ class Crate {
     return Buffer.from(contents, "ascii");
   }
   async save() {
+    // TODO: ENSURE FOLDER EXISTS
+    await util.promisify(fs.mkdir)(path.dirname(this.filepath), {
+      recursive: true,
+    });
+
     const buffer = this._buildSaveBuffer();
     return util.promisify(fs.writeFile)(this.filepath, buffer, {
-      encoding: null
+      encoding: null,
     });
   }
   saveSync() {
+    fs.mkdirSync(path.dirname(this.filepath), { recursive: true });
     const buffer = this._buildSaveBuffer();
     fs.writeFileSync(this.filepath, buffer, { encoding: null });
   }
@@ -96,7 +103,7 @@ class Crate {
 const seratojs = {
   Crate: Crate,
   listCratesSync: listCratesSync,
-  listCrates: listCrates
+  listCrates: listCrates,
 };
 
 module.exports = seratojs;
