@@ -172,10 +172,6 @@ class Crate {
       const filepath = this._buildCrateFilepath(seratoFolder);
       const buffer = this._buildSaveBuffer();
 
-      // Ensure folder exists
-      await util.promisify(fs.mkdir)(path.dirname(filepath), {
-        recursive: true,
-      });
       return util.promisify(fs.writeFile)(filepath, buffer, {
         encoding: null,
       });
@@ -187,7 +183,6 @@ class Crate {
       const buffer = this._buildSaveBuffer();
 
       // Ensure folder exists
-      fs.mkdirSync(path.dirname(filepath), { recursive: true });
       fs.writeFileSync(filepath, buffer, { encoding: null });
     }
   }

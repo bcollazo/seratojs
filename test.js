@@ -12,10 +12,6 @@ const { sanitizeFilename } = require("./util");
  */
 const TEST_SERATO_FOLDER = path.join(".", "_TestSerato_");
 const TEST_SUBCRATES_FOLDER = path.join(TEST_SERATO_FOLDER, "Subcrates");
-const NON_EXISTENT_SERATO_FOLDER = path.join(
-  ".",
-  "NonExistentSeratoTestFolder"
-);
 
 function safelyDeleteSeratoFolder(folder) {
   const subCrateFolder = path.join(folder, "Subcrates");
@@ -239,23 +235,23 @@ test("weird names dont break crate creation", async () => {
   await newCrate.save();
 });
 
-test("async create when Serato folder doesnt exist", async () => {
-  const newCrate = new seratojs.Crate(
-    "TestCrateSeratoFolderNonExistent",
-    NON_EXISTENT_SERATO_FOLDER
-  );
-  await newCrate.save();
-  safelyDeleteSeratoFolder(NON_EXISTENT_SERATO_FOLDER);
-});
+// test("async create when Serato folder doesnt exist", async () => {
+//   const newCrate = new seratojs.Crate(
+//     "TestCrateSeratoFolderNonExistent",
+//     NON_EXISTENT_SERATO_FOLDER
+//   );
+//   await newCrate.save();
+//   safelyDeleteSeratoFolder(NON_EXISTENT_SERATO_FOLDER);
+// });
 
-test("create when Serato folder doesnt exist", async () => {
-  const newCrate = new seratojs.Crate(
-    "TestCrateSeratoFolderNonExistent",
-    NON_EXISTENT_SERATO_FOLDER
-  );
-  newCrate.saveSync();
-  safelyDeleteSeratoFolder(NON_EXISTENT_SERATO_FOLDER);
-});
+// test("create when Serato folder doesnt exist", async () => {
+//   const newCrate = new seratojs.Crate(
+//     "TestCrateSeratoFolderNonExistent",
+//     NON_EXISTENT_SERATO_FOLDER
+//   );
+//   newCrate.saveSync();
+//   safelyDeleteSeratoFolder(NON_EXISTENT_SERATO_FOLDER);
+// });
 
 test("util filename sanitazion", () => {
   expect(sanitizeFilename("hello/world")).toBe("hello-world");
