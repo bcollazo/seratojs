@@ -127,10 +127,11 @@ class Crate {
     return filepath;
   }
   _buildSaveBuffer() {
-    const header = "vrsn   8 1 . 0 / S e r a t o   S c r a t c h L i v e   C r a t e".replace(
-      / /g,
-      "\0"
-    );
+    const header =
+      "vrsn   8 1 . 0 / S e r a t o   S c r a t c h L i v e   C r a t e".replace(
+        / /g,
+        "\0"
+      );
 
     let playlistSection = "";
     if (this.songPaths) {
@@ -155,6 +156,11 @@ class Crate {
     for (const seratoFolder of this.getSaveLocations()) {
       const filepath = this._buildCrateFilepath(seratoFolder);
       const buffer = this._buildSaveBuffer();
+
+      // Ensure folder exists
+      await util.promisify(fs.mkdir)(path.dirname(filepath), {
+        recursive: true,
+      });
       return util.promisify(fs.writeFile)(filepath, buffer, {
         encoding: null,
       });
@@ -164,6 +170,9 @@ class Crate {
     for (const seratoFolder of this.getSaveLocations()) {
       const filepath = this._buildCrateFilepath(seratoFolder);
       const buffer = this._buildSaveBuffer();
+
+      // Ensure folder exists
+      fs.mkdirSync(path.dirname(filepath), { recursive: true });
       fs.writeFileSync(filepath, buffer, { encoding: null });
     }
   }
