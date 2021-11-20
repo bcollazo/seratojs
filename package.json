@@ -24,6 +24,6 @@
   },
   "homepage": "https://github.com/bcollazo/seratojs#readme",
   "devDependencies": {
-    "jest": "^25.1.0"
+    "jest": "^27.3.1"
   }
 }
