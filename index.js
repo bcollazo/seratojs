@@ -89,7 +89,7 @@ class Crate {
     this.songPaths.forEach((songPath) => {
       const root = path.parse(songPath).root;
       const isFromExternalDrive =
-        root === "C:\\" ||
+        (process.platform === "win32" && root !== "C:\\") ||
         (process.platform === "darwin" && songPath.startsWith("/Volumes"));
 
       if (isFromExternalDrive) {
@@ -99,7 +99,7 @@ class Crate {
           const externalRoot = songPath
             .split(path.sep)
             .slice(0, 3)
-            .join(path.sep);
+            .join(path.sep); // e.g. /Volumes/SampleDrive
           roots.add(path.join(externalRoot, "_Serato_"));
         } else {
           throw new Error("Platform not supported");

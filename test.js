@@ -1,3 +1,4 @@
+const os = require("os");
 const path = require("path");
 const fs = require("fs");
 
@@ -114,7 +115,7 @@ test("adding songs from a drive and local disk, saves it in both", () => {
   const locations = crate.getSaveLocations();
   expect(locations.length).toBe(2);
   expect(locations).toContain(externalPath("_Serato_"));
-  expect(locations).toContain(localPath("/Users/bcollazo/Music/_Serato_"));
+  expect(locations).toContain(path.join(os.homedir(), "Music", "_Serato_"));
 });
 
 test("adding songs from local disk only, saves it Music folder _Serato_", () => {
@@ -124,7 +125,7 @@ test("adding songs from local disk only, saves it Music folder _Serato_", () => 
 
   const locations = crate.getSaveLocations();
   expect(locations.length).toBe(1);
-  expect(locations).toContain(localPath("/Users/bcollazo/Music/_Serato_"));
+  expect(locations).toContain(path.join(os.homedir(), "Music", "_Serato_"));
 });
 
 test("new empty crate saves it Music folder _Serato_", () => {
@@ -132,7 +133,7 @@ test("new empty crate saves it Music folder _Serato_", () => {
 
   const locations = crate.getSaveLocations();
   expect(locations.length).toBe(1);
-  expect(locations).toContain(localPath("/Users/bcollazo/Music/_Serato_"));
+  expect(locations).toContain(path.join(os.homedir(), "Music", "_Serato_"));
 });
 
 test("if specify serato folder at creation, saving will use that one. no matter contents", () => {
