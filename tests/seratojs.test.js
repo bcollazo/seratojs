@@ -2,8 +2,8 @@ const os = require("os");
 const path = require("path");
 const fs = require("fs");
 
-const seratojs = require("./index");
-const { sanitizeFilename } = require("./util");
+const seratojs = require("../index");
+const { localPath, externalPath } = require("./utils");
 
 /**
  * These tests create a folder in the repo root called "_TestSerato_"
@@ -71,26 +71,6 @@ test("async list crates and sync song paths", async () => {
     ),
   ]);
 });
-
-function externalPath(posixPath) {
-  if (process.platform === "win32") {
-    return path.resolve("D:\\", posixPath);
-  } else if (process.platform === "darwin") {
-    return path.resolve("/Volumes/SampleExternalHardDrive", posixPath);
-  } else {
-    throw new Error("Not Implemented");
-  }
-}
-
-function localPath(posixPath) {
-  if (process.platform === "win32") {
-    return path.resolve("C:\\", posixPath);
-  } else if (process.platform === "darwin") {
-    return path.resolve("/", posixPath);
-  } else {
-    throw new Error("Not Implemented");
-  }
-}
 
 // ===== Save locations
 test("adding songs from a drive, saves it in drive", () => {
@@ -252,22 +232,3 @@ test("weird names dont break crate creation", async () => {
 //   newCrate.saveSync();
 //   safelyDeleteSeratoFolder(NON_EXISTENT_SERATO_FOLDER);
 // });
-
-test("util filename sanitazion", () => {
-  expect(sanitizeFilename("hello/world")).toBe("hello-world");
-  expect(sanitizeFilename("hello/wo rl/d")).toBe("hello-wo rl-d");
-  expect(sanitizeFilename("hello-world")).toBe("hello-world");
-  expect(sanitizeFilename("foo bar baz")).toBe("foo bar baz");
-  expect(sanitizeFilename("Foo BAR bAz")).toBe("Foo BAR bAz");
-  expect(sanitizeFilename("Foo BAR.bAz")).toBe("Foo BAR-bAz");
-  expect(sanitizeFilename("Foo_BAR.bAz")).toBe("Foo_BAR-bAz");
-  expect(sanitizeFilename("Foo_BAR.bAz!")).toBe("Foo_BAR-bAz-");
-  expect(sanitizeFilename("!Viva Latino!")).toBe("-Viva Latino-");
-  expect(sanitizeFilename("2000-2010 HipHop / Reggae")).toBe(
-    "2000-2010 HipHop - Reggae"
-  );
-  expect(sanitizeFilename("Activáera!?")).toBe("Activ-era--");
-  expect(sanitizeFilename("2000-2010 HipHáp / Reggaeton!?")).toBe(
-    "2000-2010 HipH-p - Reggaeton--"
-  );
-});

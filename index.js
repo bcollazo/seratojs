@@ -8,6 +8,9 @@ const {
   toSeratoString,
   intToHexbin,
   sanitizeFilename,
+  removeDriveRoot,
+  selectExternalRoot,
+  isFromExternalDrive,
 } = require("./util");
 
 // Singleton for Serato Folder Path (I doubt it'll change during runtime)
@@ -87,23 +90,9 @@ class Crate {
 
     const roots = new Set();
     this.songPaths.forEach((songPath) => {
-      const root = path.parse(songPath).root;
-      const isFromExternalDrive =
-        (process.platform === "win32" && root !== "C:\\") ||
-        (process.platform === "darwin" && songPath.startsWith("/Volumes"));
-
-      if (isFromExternalDrive) {
-        if (process.platform === "win32") {
-          roots.add(path.join(root, "_Serato_"));
-        } else if (process.platform === "darwin") {
-          const externalRoot = songPath
-            .split(path.sep)
-            .slice(0, 3)
-            .join(path.sep); // e.g. /Volumes/SampleDrive
-          roots.add(path.join(externalRoot, "_Serato_"));
-        } else {
-          throw new Error("Platform not supported");
-        }
+      if (isFromExternalDrive(songPath)) {
+        const externalRoot = selectExternalRoot(songPath);
+        roots.add(path.join(externalRoot, "_Serato_"));
       } else {
         roots.add(PLATFORM_DEFAULT_SERATO_FOLDER);
       }
@@ -152,10 +141,7 @@ class Crate {
     if (this.songPaths) {
       this.songPaths.forEach((songPath) => {
         const absoluteSongPath = path.resolve(songPath);
-        const songPathWithoutDrive =
-          process.platform === "win32"
-            ? absoluteSongPath.substring(3) // remove the C:\ or D:\ or ...
-            : absoluteSongPath;
+        const songPathWithoutDrive = removeDriveRoot(absoluteSongPath);
         const data = toSeratoString(songPathWithoutDrive);
         let ptrkSize = intToHexbin(data.length);
         let otrkSize = intToHexbin(data.length + 8); // fixing the +8 (4 for 'ptrk', 4 for ptrkSize)

@@ -43,9 +43,51 @@ const sanitizeFilename = function (filename) {
   return filename.replace(INVALID_CHARACTERS_REGEX, "-");
 };
 
+/** Second param for dependency injection testing */
+function removeDriveRoot(absoluteSongPath, platform = null) {
+  if ((platform || process.platform) === "win32") {
+    return absoluteSongPath.substring(3); // remove the C: or D: or ...
+  } else {
+    if (isFromExternalDrive(absoluteSongPath)) {
+      const externalDrive = selectExternalRoot(absoluteSongPath);
+      return absoluteSongPath.substring(externalDrive.length);
+    } else {
+      return absoluteSongPath;
+    }
+  }
+}
+
+/**
+ * Assumes input is an external path
+ * @returns external volume prefix string for external drive paths
+ *
+ * e.g.
+ *  /Volumes/SampleDrive/Some/Path.mp3 => /Volumes/SampleDrive
+ *  D:\\Folder\\song.mp3 => D:\\
+ */
+function selectExternalRoot(externalSongPath, platformParam = null) {
+  const platform = platformParam || process.platform;
+  if (platform === "win32") {
+    return path.parse(externalSongPath).root;
+  } else {
+    return externalSongPath.split(path.sep).slice(0, 3).join(path.sep);
+  }
+}
+
+function isFromExternalDrive(songPath, platformParam = null) {
+  const platform = platformParam || process.platform;
+  return (
+    (platform === "win32" && !songPath.startsWith("C:\\")) ||
+    (platform === "darwin" && songPath.startsWith("/Volumes"))
+  );
+}
+
 module.exports = {
   parse,
+  removeDriveRoot,
   toSeratoString,
   intToHexbin,
   sanitizeFilename,
+  selectExternalRoot,
+  isFromExternalDrive,
 };
